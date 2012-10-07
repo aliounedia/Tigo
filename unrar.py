@@ -13,7 +13,7 @@ __Author__ = "Alioune Dia"
 __Date__   = "2012-09-05 20:10"
 
 
-from datetime import datetime
+from datetime import datetime, timedelta
 import UnRAR2, os , time, thread
 _rar_path   = '.'
 _rar_files  =  []
@@ -38,13 +38,26 @@ def test():
     # Our load_db module can process
     
     for  file in  _rar_files:
-        try:
-            test2(file)
-        except Exception  as e:
-            print 'PerHaps email_getter.py has locked  this file\
-            No, Problem I will try later '
-            print e
-            time.sleep(2)
+        # Il n est pas necessaire de Unrar  tous les fihiers .RAR
+        # meme ceux qui on etes deja Unrar la veille , pour eviter
+        # cela nous devons etre sur que les fichiers que nous sommes
+        # entrein de decompresser sont bien ceux qui ont etes ccopies
+        # du serveurs FTp ou pop ce jour!
+
+        
+        name  = datetime.now() - timedelta(days =1)
+        name  = name.strftime('%Y%m%d')
+        print 'name' , name 
+        if name in  file:
+            print file 
+            try:
+                    test2(file)
+            except Exception  as e:
+                print 'PerHaps email_getter.py has locked  this file\
+                No, Problem I will try later '
+                print e
+                
+           
 
 
 if __name__ =='__main__':

@@ -31,8 +31,8 @@ _SEGMENT_NAME_UNKNOWN    = "TIGO_CUSTOMER_PRICE_CALL_%s_UNKNOWN_"%(
 
 
 
-# ['XXX', 'AGENCE Louga', 'VENTES', '2012-09-04 00:00:00.000',
-# 'XX', '', 'NEW',
+# ['768495662', 'AGENCE Louga', 'VENTES', '2012-09-04 00:00:00.000',
+# 'BAYE D IAMIL', '', 'NEW',
 # 'TIGO_CUSTOMER_PRICE_CALL_20120901_AGENCES__NEW' ,'2012-09-05']
 
 
@@ -71,13 +71,8 @@ insert  into main(
 """
 
 
-STRING_CONNECTION  = """
-DRIVER  ={SQL Server};
-SERVER  =X
-DATABASE=TIGO_X;
-UID     =X;
-PWD     =X
-"""
+STRING_CONNECTION  = "DRIVER={SQL Server};\
+SERVER=X;DATABASE=X;UID=X;PWD=X"
 
 # Initialize a connection  from  database using
 # STRING_CONNECTION
@@ -96,7 +91,7 @@ def cur():
     return  get_connection().cursor()
 
 
-# Storing data from  db
+# Soring data from  db
 def storeDb(data):
    c  =cur()
    nice_lines =[]
@@ -153,9 +148,12 @@ def sendMail(data):
 
     flat     = '<br/>'.join( ['%s ** %s' %(one, two)
                           for (one, two) in map.items() ])
+
+    
+    
     to       = ['adia@pcci.sn',
                 'dia.aliounes@gmail.com']
-                 
+           
     subject   ="[Tigo] Chargement de fichiers %s """%\
                  date.today().strftime('%Y%m%d')
     
@@ -182,6 +180,12 @@ Service Informatique.<br/>
 def test():
     for file in os.listdir(WORKDIR):
         print file
+        base, ext    = os.path.splitext(file)
+        print
+        base_traite  = '%s_Traite_%s' % (base, ext)
+        if os.path.exists(base_traite):
+            continue
+        
         # This is a RAR files do not handle
         if  '.RAR' in file or  'load.py' in file \
            or  'unrar.py' in file  or  'send.py' in file\
@@ -189,11 +193,41 @@ def test():
                  continue
         print  'File ' , file 
         data =prepare_data(file)
-        storeDb(data)
-        sendMail(data)
-        cleanDb()
-        renamefile(file)
+        if not len(data):
+            renamefile(file)
+            continue
+
+
+        # Ce ci est un Fix, car il semble que dans l'extraction
+        # quotidient que Tigo  envoi, parfois on y trouve un ou
+        # deux fihiers mals formes
+
+
+        # Fix
+        #=====
+
+        # Je ne peux pas courir le risque que des fichiers
+        # 10 /ne soitent pas charges parceque il en exist
+        # 1  mal formes .Le plus sur c est de charger les 9
+        # et sauter le 1
+        # Comme cela les CCX risquent pas de manquer de fiches
+        # le matin :)
         
+        # When all data items have'nt the same length, it
+        # may raise  un error here so , when these happen
+        # this should not block others files to be handled
+        try:
+            storeDb(data)
+            sendMail(data)
+            cleanDb()
+            renamefile(file)
+        except Exception, e:
+            # We are sure that the number of file to be handled
+            # is 4 , so we will check tomorrow into the renamed
+            # files if it  exists some files to handle.
+            renamefile(file)
+            print e
+            
 
 
 # Prapare to for db
